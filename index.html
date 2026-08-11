@@ -248,6 +248,12 @@
   }
   .checkbox.done{ background:var(--screen); border-color:var(--screen); }
   .task-row.done span.task-name{ text-decoration:line-through; color:var(--paper-faint); }
+  .task-del{
+    margin-left:auto; color:var(--paper-faint); cursor:pointer; font-size:12px;
+    padding:4px 6px; border-radius:3px; flex-shrink:0;
+  }
+  .task-del:hover{ color:var(--danger); background:rgba(232,101,74,0.1); }
+  .task-row{ display:flex; }
 
   .pill{
     display:inline-block;
@@ -423,7 +429,7 @@
 
     <div class="field">
       <label>Name</label>
-      <input type="text" id="loginName" placeholder="e.g. Vincent Lee">
+      <input type="text" id="loginName" placeholder="e.g. Vincent Lin">
     </div>
     <div class="field">
       <label>I am a</label>
@@ -473,8 +479,8 @@
     <div class="grid g3" style="margin-bottom:16px;">
       <div class="panel">
         <div class="label-sm">Today's Progress</div>
-        <div class="big-num">73%</div>
-        <div class="bar-track" style="margin-top:12px;"><div class="bar-fill" style="width:73%;"></div></div>
+        <div class="big-num" id="progressPct">0%</div>
+        <div class="bar-track" style="margin-top:12px;"><div class="bar-fill" id="progressBar" style="width:0%;"></div></div>
       </div>
       <div class="panel">
         <div class="label-sm">Focus Score</div>
@@ -492,9 +498,9 @@
       <div class="panel">
         <div class="label-sm">Today's Tasks</div>
         <div id="taskListHome">
-          <div class="task-row done"><div class="checkbox done">✓</div><span class="task-name">Math Homework</span></div>
-          <div class="task-row done"><div class="checkbox done">✓</div><span class="task-name">SAT Reading</span></div>
-          <div class="task-row"><div class="checkbox">&nbsp;</div><span class="task-name">Physics FRQ</span></div>
+          <div class="task-row done"><div class="checkbox done">✓</div><span class="task-name">Math Homework</span><span class="task-del">✕</span></div>
+          <div class="task-row done"><div class="checkbox done">✓</div><span class="task-name">SAT Reading</span><span class="task-del">✕</span></div>
+          <div class="task-row"><div class="checkbox">&nbsp;</div><span class="task-name">Physics FRQ</span><span class="task-del">✕</span></div>
         </div>
         <div style="display:flex; gap:8px; margin-top:12px;">
           <input type="text" id="newTaskHome" placeholder="Add a task...">
@@ -613,28 +619,32 @@
     <div class="panel">
       <table>
         <thead>
-          <tr><th>Task</th><th>Priority</th><th></th></tr>
+          <tr><th>Task</th><th>Priority</th><th></th><th></th></tr>
         </thead>
         <tbody id="taskTableBody">
           <tr>
             <td>Physics Quiz</td>
             <td style="font-family:var(--font-mono); color:var(--danger);">96</td>
             <td style="width:40%;"><div class="bar-track"><div class="bar-fill" style="width:96%; background:linear-gradient(90deg,var(--danger-dim),var(--danger));"></div></div></td>
+            <td><span class="task-del">✕</span></td>
           </tr>
           <tr>
             <td>SAT Reading</td>
             <td style="font-family:var(--font-mono); color:var(--amber);">89</td>
             <td><div class="bar-track"><div class="bar-fill" style="width:89%; background:linear-gradient(90deg,var(--amber-dim),var(--amber));"></div></div></td>
+            <td><span class="task-del">✕</span></td>
           </tr>
           <tr>
             <td>AP Calculus</td>
             <td style="font-family:var(--font-mono); color:var(--amber);">81</td>
             <td><div class="bar-track"><div class="bar-fill" style="width:81%; background:linear-gradient(90deg,var(--amber-dim),var(--amber));"></div></div></td>
+            <td><span class="task-del">✕</span></td>
           </tr>
           <tr>
             <td>English Essay</td>
             <td style="font-family:var(--font-mono); color:var(--screen);">52</td>
             <td><div class="bar-track"><div class="bar-fill" style="width:52%;"></div></div></td>
+            <td><span class="task-del">✕</span></td>
           </tr>
         </tbody>
       </table>
@@ -675,21 +685,18 @@
     </div>
 
     <div class="panel">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-        <div>
-          <div class="label-sm" style="margin-bottom:2px;">AI Quiz Generator</div>
-          <div class="stat-note">Upload notes → the system builds a quiz and turns wrong answers into flashcards automatically.</div>
-        </div>
-        <button class="btn primary" id="genQuizBtn">Upload notes</button>
+      <div class="label-sm" style="margin-bottom:2px;">Quiz Generator</div>
+      <div class="stat-note" style="margin-bottom:12px;">Paste your notes below. Each sentence becomes a fill-in-the-blank question — get one wrong (or skip it) and it's saved as a flashcard.</div>
+      <textarea id="notesInput" rows="4" placeholder="Paste or type your study notes here..." style="width:100%; background:var(--bg-panel-alt); border:1px solid var(--line-bright); color:var(--paper); padding:12px; border-radius:var(--radius); font-family:var(--font-body); font-size:13.5px; resize:vertical;"></textarea>
+      <div style="margin-top:10px;">
+        <button class="btn primary" id="genQuizBtn">Generate quiz</button>
       </div>
-      <div id="quizOutput" style="display:none;">
+      <div id="quizOutput" style="display:none; margin-top:16px;">
         <div class="divider"></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-          <span class="pill screen">10 MCQ</span>
-          <span class="pill amber">5 Short Answer</span>
-          <span class="pill danger">2 FRQ</span>
-        </div>
-        <div class="stat-note">Difficulty mix: Easy · Medium · Hard — 3 missed answers were converted to flashcards.</div>
+        <div id="quizQuestions"></div>
+        <div class="divider"></div>
+        <div class="label-sm">Flashcards from missed / skipped questions</div>
+        <div id="flashcardList" class="stat-note">None yet — answer questions above.</div>
       </div>
     </div>
   </section>
@@ -700,6 +707,7 @@
       <div class="eyebrow">Feature — AI Study Coach</div>
       <h1 class="view-title">AI Coach</h1>
       <div class="view-desc">Not a chatbot. It reads your grades, study time, and quiz history — then tells you what to do tonight.</div>
+      <div class="stat-note" style="margin-top:6px;">The two insight cards and burnout score below are sample output — real numbers appear once there's usage history to learn from. The check-in on the right is fully live.</div>
     </div>
 
     <div class="grid g2" style="margin-bottom:16px;">
@@ -757,6 +765,7 @@
       <div class="eyebrow">Feature — Productivity Analytics</div>
       <h1 class="view-title">Analytics</h1>
       <div class="view-desc">Not "you studied 8 hours." What that time actually did for you.</div>
+      <div class="stat-note" style="margin-top:6px;">Shown here with sample data — this fills in with your real focus, completion, and timing patterns as you use APEX.</div>
     </div>
 
     <div class="grid g4" style="margin-bottom:16px;">
@@ -901,14 +910,16 @@
         <div class="label-sm">Account</div>
         <div class="field"><label>Name</label><input type="text" id="settingsName" value=""></div>
         <div class="field"><label>School</label><input type="text" value="Hong Wen International School" readonly></div>
-        <div class="field"><label>SAT Goal Score</label><input type="text" value="1450"></div>
+        <div class="field"><label>SAT Goal Score</label><input type="text" id="settingsGoal" value="1450"></div>
+        <button class="btn primary" id="saveSettingsBtn" style="width:100%;">Save changes</button>
+        <div id="settingsSaved" class="stat-note" style="display:none; margin-top:10px; color:var(--screen);">Saved.</div>
       </div>
       <div class="panel">
         <div class="label-sm">Notifications</div>
-        <div class="toggle-row"><span>Daily study reminders</span><div class="switch on" data-toggle></div></div>
-        <div class="toggle-row"><span>Burnout warnings</span><div class="switch on" data-toggle></div></div>
-        <div class="toggle-row"><span>Weekly AI insight report</span><div class="switch on" data-toggle></div></div>
-        <div class="toggle-row"><span>Teacher assignment alerts</span><div class="switch" data-toggle></div></div>
+        <div class="toggle-row"><span>Daily study reminders</span><div class="switch on" data-toggle="reminders"></div></div>
+        <div class="toggle-row"><span>Burnout warnings</span><div class="switch on" data-toggle="burnout"></div></div>
+        <div class="toggle-row"><span>Weekly AI insight report</span><div class="switch on" data-toggle="weekly"></div></div>
+        <div class="toggle-row"><span>Teacher assignment alerts</span><div class="switch" data-toggle="teacherAlerts"></div></div>
       </div>
     </div>
 
@@ -930,6 +941,25 @@
 </main>
 
 <script>
+  // =====================================================================
+  // STORAGE — this is a static site (GitHub Pages, no server), so data
+  // is saved per-browser via localStorage. It survives refreshes on this
+  // device, but won't sync to a different student's or teacher's device —
+  // that requires a real backend + database.
+  // =====================================================================
+  const STORE_KEY = 'apex_hongwen_data';
+  function loadStore(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveStore(store){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
+    catch(e){ console.warn('Could not save', e); }
+  }
+  let store = loadStore();
+
   // ---- login gate ----
   let selectedRole = 'student';
   document.querySelectorAll('.role-opt').forEach(opt => {
@@ -948,8 +978,9 @@
     document.getElementById('loginGate').style.display = 'none';
     document.getElementById('homeGreeting').textContent = 'Good evening, ' + firstName;
     document.getElementById('settingsName').value = name;
+    store.name = name;
+    saveStore(store);
 
-    // route to the right landing view based on role
     const targetView = selectedRole === 'teacher' ? 'teacher' : 'home';
     navItems.forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -973,25 +1004,69 @@
     });
   });
 
-  // ---- home checkbox toggle (delegated so it also works on newly-added tasks) ----
-  document.getElementById('taskListHome').addEventListener('click', (e) => {
-    const cb = e.target.closest('.checkbox');
-    if(!cb) return;
-    cb.classList.toggle('done');
-    cb.textContent = cb.classList.contains('done') ? '✓' : '';
-    cb.closest('.task-row').classList.toggle('done');
+  // =====================================================================
+  // HOME TASKS
+  // =====================================================================
+  const taskListHome = document.getElementById('taskListHome');
+
+  function defaultHomeTasks(){
+    return [
+      {name:'Math Homework', done:true},
+      {name:'SAT Reading', done:true},
+      {name:'Physics FRQ', done:false}
+    ];
+  }
+
+  function renderHomeTasks(){
+    const tasks = store.homeTasks || defaultHomeTasks();
+    taskListHome.innerHTML = '';
+    tasks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'task-row' + (t.done ? ' done' : '');
+      row.dataset.i = i;
+      row.innerHTML =
+        '<div class="checkbox' + (t.done ? ' done' : '') + '">' + (t.done ? '✓' : '&nbsp;') + '</div>' +
+        '<span class="task-name">' + t.name + '</span>' +
+        '<span class="task-del">✕</span>';
+      taskListHome.appendChild(row);
+    });
+    updateProgress();
+  }
+
+  function updateProgress(){
+    const tasks = store.homeTasks || defaultHomeTasks();
+    const pct = tasks.length ? Math.round(100 * tasks.filter(t => t.done).length / tasks.length) : 0;
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressBar').style.width = pct + '%';
+  }
+
+  taskListHome.addEventListener('click', (e) => {
+    const row = e.target.closest('.task-row');
+    if(!row) return;
+    const tasks = store.homeTasks || defaultHomeTasks();
+    const i = parseInt(row.dataset.i, 10);
+    if(e.target.closest('.checkbox')){
+      tasks[i].done = !tasks[i].done;
+      store.homeTasks = tasks;
+      saveStore(store);
+      renderHomeTasks();
+    } else if(e.target.closest('.task-del')){
+      tasks.splice(i, 1);
+      store.homeTasks = tasks;
+      saveStore(store);
+      renderHomeTasks();
+    }
   });
 
-  // ---- home: add task ----
   function addHomeTask(){
     const input = document.getElementById('newTaskHome');
     const name = input.value.trim();
     if(!name) return;
-    const row = document.createElement('div');
-    row.className = 'task-row';
-    row.innerHTML = '<div class="checkbox">&nbsp;</div><span class="task-name">' +
-      name.replace(/</g,'&lt;') + '</span>';
-    document.getElementById('taskListHome').appendChild(row);
+    const tasks = store.homeTasks || defaultHomeTasks();
+    tasks.push({name: name.replace(/</g,'&lt;'), done:false});
+    store.homeTasks = tasks;
+    saveStore(store);
+    renderHomeTasks();
     input.value = '';
     input.focus();
   }
@@ -1000,12 +1075,48 @@
     if(e.key === 'Enter') addHomeTask();
   });
 
-  // ---- tasks page: add task with priority ----
+  // =====================================================================
+  // PRIORITY TASK TABLE
+  // =====================================================================
+  const taskTableBody = document.getElementById('taskTableBody');
+
+  function defaultTableTasks(){
+    return [
+      {name:'Physics Quiz', priority:96},
+      {name:'SAT Reading', priority:89},
+      {name:'AP Calculus', priority:81},
+      {name:'English Essay', priority:52}
+    ];
+  }
   function priorityColor(p){
     if(p >= 85) return {text:'var(--danger)', barA:'var(--danger-dim)', barB:'var(--danger)'};
     if(p >= 65) return {text:'var(--amber)', barA:'var(--amber-dim)', barB:'var(--amber)'};
     return {text:'var(--screen)', barA:'var(--screen-dim)', barB:'var(--screen)'};
   }
+  function renderTaskTable(){
+    const tasks = (store.tableTasks || defaultTableTasks()).slice().sort((a,b)=>b.priority-a.priority);
+    taskTableBody.innerHTML = '';
+    tasks.forEach((t, i) => {
+      const c = priorityColor(t.priority);
+      const tr = document.createElement('tr');
+      tr.dataset.name = t.name;
+      tr.innerHTML =
+        '<td>' + t.name + '</td>' +
+        '<td style="font-family:var(--font-mono); color:' + c.text + ';">' + t.priority + '</td>' +
+        '<td style="width:40%;"><div class="bar-track"><div class="bar-fill" style="width:' + t.priority + '%; background:linear-gradient(90deg,' + c.barA + ',' + c.barB + ');"></div></div></td>' +
+        '<td><span class="task-del">✕</span></td>';
+      taskTableBody.appendChild(tr);
+    });
+  }
+  taskTableBody.addEventListener('click', (e) => {
+    if(!e.target.closest('.task-del')) return;
+    const tr = e.target.closest('tr');
+    const name = tr.dataset.name;
+    const tasks = (store.tableTasks || defaultTableTasks()).filter(t => t.name !== name);
+    store.tableTasks = tasks;
+    saveStore(store);
+    renderTaskTable();
+  });
   function addTaskRow(){
     const nameInput = document.getElementById('newTaskName');
     const priInput = document.getElementById('newTaskPriority');
@@ -1014,13 +1125,11 @@
     if(!name) return;
     if(isNaN(priority)) priority = 50;
     priority = Math.max(0, Math.min(100, priority));
-    const c = priorityColor(priority);
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td>' + name.replace(/</g,'&lt;') + '</td>' +
-      '<td style="font-family:var(--font-mono); color:' + c.text + ';">' + priority + '</td>' +
-      '<td style="width:40%;"><div class="bar-track"><div class="bar-fill" style="width:' + priority + '%; background:linear-gradient(90deg,' + c.barA + ',' + c.barB + ');"></div></div></td>';
-    document.getElementById('taskTableBody').appendChild(tr);
+    const tasks = store.tableTasks || defaultTableTasks();
+    tasks.push({name: name.replace(/</g,'&lt;'), priority});
+    store.tableTasks = tasks;
+    saveStore(store);
+    renderTaskTable();
     nameInput.value = '';
     priInput.value = '';
     nameInput.focus();
@@ -1030,72 +1139,135 @@
     el.addEventListener('keydown', (e) => { if(e.key === 'Enter') addTaskRow(); });
   });
 
-  // ---- calendar simulate ----
-  let simulated = false;
-  document.getElementById('simulateBtn').addEventListener('click', function(){
-    simulated = !simulated;
+  // =====================================================================
+  // CALENDAR — adaptive scheduling toggle (persisted)
+  // =====================================================================
+  function renderCalendar(){
+    const simulated = !!store.calendarSimulated;
     const monPhysics = document.getElementById('mon-physics');
     const tuePhysics = document.getElementById('tue-physics');
     const wedBio = document.getElementById('wed-bio');
     const note = document.getElementById('calendarNote');
+    const btn = document.getElementById('simulateBtn');
     if(simulated){
       monPhysics.classList.add('gone');
       tuePhysics.textContent = 'Physics';
       tuePhysics.classList.add('shifted');
       wedBio.classList.add('shifted');
       note.textContent = 'Adapted: Physics moved to Tuesday. Biology shifted to Wednesday to make room.';
-      this.textContent = 'Undo simulation';
+      btn.textContent = 'Undo simulation';
     } else {
       monPhysics.classList.remove('gone');
       tuePhysics.textContent = '\u00A0';
       tuePhysics.classList.remove('shifted');
       wedBio.classList.remove('shifted');
       note.textContent = 'Original schedule — no conflicts detected.';
-      this.textContent = 'Mark Physics as missed';
+      btn.textContent = 'Mark Physics as missed';
+    }
+  }
+  document.getElementById('simulateBtn').addEventListener('click', function(){
+    store.calendarSimulated = !store.calendarSimulated;
+    saveStore(store);
+    renderCalendar();
+  });
+
+  // =====================================================================
+  // QUIZ GENERATOR — real, built from whatever the student types in
+  // =====================================================================
+  let quizState = []; // {question, answer, status: 'unanswered'|'correct'|'missed'}
+
+  function pickBlankWord(sentence){
+    const words = sentence.trim().split(/\s+/).filter(w => w.replace(/[^a-zA-Z]/g,'').length > 3);
+    if(!words.length) return null;
+    const word = words[Math.floor(Math.random() * words.length)];
+    return word;
+  }
+
+  function generateQuiz(){
+    const raw = document.getElementById('notesInput').value.trim();
+    const output = document.getElementById('quizOutput');
+    const qContainer = document.getElementById('quizQuestions');
+    if(!raw){
+      qContainer.innerHTML = '<div class="stat-note" style="color:var(--danger);">Paste some notes first — the quiz is built from what you write.</div>';
+      output.style.display = 'block';
+      return;
+    }
+    const sentences = raw.split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 12).slice(0, 8);
+    quizState = sentences.map((s) => {
+      const word = pickBlankWord(s);
+      if(!word){ return {question: s, answer: null, status:'unanswered'}; }
+      const blanked = s.replace(word, '_____');
+      return {question: blanked, answer: word.replace(/[^a-zA-Z]/g,'').toLowerCase(), status:'unanswered'};
+    }).filter(q => q.answer);
+
+    if(!quizState.length){
+      qContainer.innerHTML = '<div class="stat-note">Couldn\'t find enough full sentences to quiz on — try pasting a longer paragraph.</div>';
+      output.style.display = 'block';
+      return;
+    }
+
+    renderQuiz();
+    output.style.display = 'block';
+  }
+
+  function renderQuiz(){
+    const qContainer = document.getElementById('quizQuestions');
+    qContainer.innerHTML = '';
+    quizState.forEach((q, i) => {
+      const row = document.createElement('div');
+      row.style.marginBottom = '14px';
+      const statusPill = q.status === 'correct' ? '<span class="pill screen">Correct</span>'
+        : q.status === 'missed' ? '<span class="pill danger">Missed → flashcard</span>' : '';
+      row.innerHTML =
+        '<div style="font-size:13.5px; margin-bottom:6px;">' + (i+1) + '. ' + q.question + ' ' + statusPill + '</div>' +
+        (q.status === 'unanswered' ?
+          '<div style="display:flex; gap:8px;">' +
+            '<input type="text" placeholder="Fill in the blank" class="quizAnswer" data-i="' + i + '" style="flex:1;">' +
+            '<button class="btn checkQuizBtn" data-i="' + i + '">Check</button>' +
+          '</div>' : '');
+      qContainer.appendChild(row);
+    });
+    renderFlashcards();
+  }
+
+  document.getElementById('quizQuestions').addEventListener('click', (e) => {
+    const btn = e.target.closest('.checkQuizBtn');
+    if(!btn) return;
+    const i = parseInt(btn.dataset.i, 10);
+    const input = document.querySelector('.quizAnswer[data-i="' + i + '"]');
+    const given = (input.value || '').trim().toLowerCase();
+    quizState[i].status = (given === quizState[i].answer) ? 'correct' : 'missed';
+    renderQuiz();
+  });
+  document.getElementById('quizQuestions').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && e.target.classList.contains('quizAnswer')){
+      const i = parseInt(e.target.dataset.i, 10);
+      const given = (e.target.value || '').trim().toLowerCase();
+      quizState[i].status = (given === quizState[i].answer) ? 'correct' : 'missed';
+      renderQuiz();
     }
   });
 
-  // ---- quiz generator ----
-  document.getElementById('genQuizBtn').addEventListener('click', function(){
-    document.getElementById('quizOutput').style.display = 'block';
-    this.textContent = 'Regenerate';
-  });
-
-  // ---- assign homework (teacher) ----
-  function assignHomework(){
-    const nameInput = document.getElementById('newAssignName');
-    const dueInput = document.getElementById('newAssignDue');
-    const name = nameInput.value.trim();
-    const due = dueInput.value.trim() || 'this week';
-    if(!name) return;
-    const item = document.createElement('div');
-    item.className = 'task-row';
-    item.innerHTML = '<div class="checkbox done">✓</div><span class="task-name">' +
-      name.replace(/</g,'&lt;') + '</span><span class="pill amber" style="margin-left:auto;">Due ' +
-      due.replace(/</g,'&lt;') + '</span>';
-    item.style.display = 'flex';
-    item.style.justifyContent = 'space-between';
-    document.getElementById('assignedList').prepend(item);
-
-    const confirm = document.getElementById('assignConfirm');
-    confirm.textContent = '"' + name + '" assigned to all 28 students in AP Physics — Period 4.';
-    confirm.style.display = 'block';
-
-    nameInput.value = '';
-    dueInput.value = '';
-    nameInput.focus();
+  function renderFlashcards(){
+    const list = document.getElementById('flashcardList');
+    const missed = quizState.filter(q => q.status === 'missed');
+    if(!missed.length){
+      list.innerHTML = 'None yet — answer questions above.';
+      return;
+    }
+    list.innerHTML = missed.map(q =>
+      '<div class="panel" style="margin-top:8px; padding:12px 14px;">' +
+        '<div style="font-size:13px; margin-bottom:4px;">' + q.question + '</div>' +
+        '<div style="font-size:12.5px; color:var(--screen);">Answer: ' + q.answer + '</div>' +
+      '</div>'
+    ).join('');
   }
-  document.getElementById('assignBtn').addEventListener('click', assignHomework);
-  [document.getElementById('newAssignName'), document.getElementById('newAssignDue')].forEach(el => {
-    el.addEventListener('keydown', (e) => { if(e.key === 'Enter') assignHomework(); });
-  });
+  document.getElementById('genQuizBtn').addEventListener('click', generateQuiz);
 
-  // ---- settings toggles ----
-  document.querySelectorAll('[data-toggle]').forEach(sw => {
-    sw.addEventListener('click', () => sw.classList.toggle('on'));
-  });
-
-  // ---- energy check-in ----
+  // =====================================================================
+  // AI COACH — morning check-in (live, in-memory; not persisted since it's
+  // meant to reflect how the student feels *today*)
+  // =====================================================================
   const sleepSlider = document.getElementById('sleepSlider');
   const energySlider = document.getElementById('energySlider');
   const stressSlider = document.getElementById('stressSlider');
@@ -1109,13 +1281,108 @@
     valEnergy.textContent = energySlider.value + '/10';
     valStress.textContent = stressSlider.value + '/10';
     const e = parseInt(energySlider.value);
+    const s = parseInt(stressSlider.value);
     let msg;
-    if(e >= 7) msg = 'High energy → tackle Physics FRQ first.';
+    if(e >= 7 && s <= 6) msg = 'High energy → tackle your hardest task first (check Tasks for what\'s highest priority).';
     else if(e >= 4) msg = 'Medium energy → work through standard homework.';
     else msg = 'Low energy → flashcards, reading, or review videos only.';
+    if(s >= 8) msg += ' Stress is high — consider a short break before starting.';
     energyOutput.textContent = msg;
   }
   [sleepSlider, energySlider, stressSlider].forEach(s => s.addEventListener('input', updateEnergy));
+
+  // =====================================================================
+  // TEACHER PORTAL — assign homework (persisted)
+  // =====================================================================
+  function renderAssignments(){
+    const list = store.assignments || [];
+    const el = document.getElementById('assignedList');
+    el.innerHTML = list.map((a, i) =>
+      '<div class="task-row" data-i="' + i + '" style="justify-content:space-between;">' +
+        '<div class="checkbox done">✓</div><span class="task-name">' + a.name + '</span>' +
+        '<span class="pill amber" style="margin-left:auto;">Due ' + a.due + '</span>' +
+        '<span class="task-del">✕</span>' +
+      '</div>'
+    ).join('');
+  }
+  document.getElementById('assignedList').addEventListener('click', (e) => {
+    if(!e.target.closest('.task-del')) return;
+    const row = e.target.closest('.task-row');
+    const i = parseInt(row.dataset.i, 10);
+    const list = store.assignments || [];
+    list.splice(i, 1);
+    store.assignments = list;
+    saveStore(store);
+    renderAssignments();
+  });
+  function assignHomework(){
+    const nameInput = document.getElementById('newAssignName');
+    const dueInput = document.getElementById('newAssignDue');
+    const name = nameInput.value.trim();
+    const due = dueInput.value.trim() || 'this week';
+    if(!name) return;
+    const list = store.assignments || [];
+    list.unshift({name: name.replace(/</g,'&lt;'), due: due.replace(/</g,'&lt;')});
+    store.assignments = list;
+    saveStore(store);
+    renderAssignments();
+
+    const confirm = document.getElementById('assignConfirm');
+    confirm.textContent = '"' + name + '" assigned to AP Physics — Period 4. Saved on this device.';
+    confirm.style.display = 'block';
+
+    nameInput.value = '';
+    dueInput.value = '';
+    nameInput.focus();
+  }
+  document.getElementById('assignBtn').addEventListener('click', assignHomework);
+  [document.getElementById('newAssignName'), document.getElementById('newAssignDue')].forEach(el => {
+    el.addEventListener('keydown', (e) => { if(e.key === 'Enter') assignHomework(); });
+  });
+
+  // =====================================================================
+  // SETTINGS — account + notification toggles (persisted)
+  // =====================================================================
+  document.querySelectorAll('[data-toggle]').forEach(sw => {
+    const key = sw.dataset.toggle;
+    const saved = store.toggles ? store.toggles[key] : undefined;
+    const on = saved === undefined ? sw.classList.contains('on') : saved;
+    sw.classList.toggle('on', on);
+    sw.addEventListener('click', () => {
+      sw.classList.toggle('on');
+      store.toggles = store.toggles || {};
+      store.toggles[key] = sw.classList.contains('on');
+      saveStore(store);
+    });
+  });
+
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    store.name = document.getElementById('settingsName').value.trim();
+    store.satGoal = document.getElementById('settingsGoal').value.trim();
+    saveStore(store);
+    const firstName = (store.name || 'Student').split(' ')[0];
+    document.getElementById('homeGreeting').textContent = 'Good evening, ' + firstName;
+    const saved = document.getElementById('settingsSaved');
+    saved.style.display = 'block';
+    setTimeout(() => { saved.style.display = 'none'; }, 2500);
+  });
+
+  // =====================================================================
+  // INIT — apply persisted state on load
+  // =====================================================================
+  function init(){
+    if(store.name){
+      document.getElementById('settingsName').value = store.name;
+    }
+    if(store.satGoal){
+      document.getElementById('settingsGoal').value = store.satGoal;
+    }
+    renderHomeTasks();
+    renderTaskTable();
+    renderCalendar();
+    renderAssignments();
+  }
+  init();
 </script>
 
 </body>
