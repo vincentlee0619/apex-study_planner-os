@@ -496,6 +496,10 @@
           <div class="task-row done"><div class="checkbox done">✓</div><span class="task-name">SAT Reading</span></div>
           <div class="task-row"><div class="checkbox">&nbsp;</div><span class="task-name">Physics FRQ</span></div>
         </div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <input type="text" id="newTaskHome" placeholder="Add a task...">
+          <button class="btn primary" id="addTaskHomeBtn" style="flex-shrink:0;">Add</button>
+        </div>
         <div class="divider"></div>
         <div class="label-sm">Upcoming</div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -597,12 +601,21 @@
       </div>
     </div>
 
+    <div class="panel" style="margin-bottom:18px;">
+      <div class="label-sm">Add a Task</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="newTaskName" placeholder="Task name" style="flex:2; min-width:160px;">
+        <input type="text" id="newTaskPriority" placeholder="Priority (0-100)" style="flex:1; min-width:120px;">
+        <button class="btn primary" id="addTaskBtn">Add task</button>
+      </div>
+    </div>
+
     <div class="panel">
       <table>
         <thead>
           <tr><th>Task</th><th>Priority</th><th></th></tr>
         </thead>
-        <tbody>
+        <tbody id="taskTableBody">
           <tr>
             <td>Physics Quiz</td>
             <td style="font-family:var(--font-mono); color:var(--danger);">96</td>
@@ -841,7 +854,6 @@
     <div class="panel" style="margin-bottom:16px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <div class="subj-name">AP Physics — Period 4</div>
-        <button class="btn primary" id="assignBtn">Assign homework</button>
       </div>
       <div class="grid g4">
         <div><div class="label-sm">Completion</div><div class="big-num" style="font-size:22px;">92%</div></div>
@@ -849,7 +861,17 @@
         <div><div class="label-sm">Avg Focus</div><div class="big-num" style="font-size:22px;">81%</div></div>
         <div><div class="label-sm">Upcoming Tests</div><div class="big-num" style="font-size:22px;">3</div></div>
       </div>
-      <div id="assignConfirm" class="stat-note" style="display:none; margin-top:14px; color:var(--screen);">Assignment sent to all 28 students in AP Physics — Period 4.</div>
+    </div>
+
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="label-sm">Assign Homework</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="newAssignName" placeholder="Assignment name" style="flex:2; min-width:160px;">
+        <input type="text" id="newAssignDue" placeholder="Due (e.g. Friday)" style="flex:1; min-width:120px;">
+        <button class="btn primary" id="assignBtn">Assign to class</button>
+      </div>
+      <div id="assignConfirm" class="stat-note" style="display:none; margin-top:14px; color:var(--screen);"></div>
+      <div id="assignedList" style="margin-top:12px;"></div>
     </div>
 
     <div class="panel">
@@ -951,13 +973,61 @@
     });
   });
 
-  // ---- home checkbox toggle ----
-  document.querySelectorAll('#taskListHome .checkbox').forEach(cb => {
-    cb.addEventListener('click', () => {
-      cb.classList.toggle('done');
-      cb.textContent = cb.classList.contains('done') ? '✓' : '';
-      cb.closest('.task-row').classList.toggle('done');
-    });
+  // ---- home checkbox toggle (delegated so it also works on newly-added tasks) ----
+  document.getElementById('taskListHome').addEventListener('click', (e) => {
+    const cb = e.target.closest('.checkbox');
+    if(!cb) return;
+    cb.classList.toggle('done');
+    cb.textContent = cb.classList.contains('done') ? '✓' : '';
+    cb.closest('.task-row').classList.toggle('done');
+  });
+
+  // ---- home: add task ----
+  function addHomeTask(){
+    const input = document.getElementById('newTaskHome');
+    const name = input.value.trim();
+    if(!name) return;
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    row.innerHTML = '<div class="checkbox">&nbsp;</div><span class="task-name">' +
+      name.replace(/</g,'&lt;') + '</span>';
+    document.getElementById('taskListHome').appendChild(row);
+    input.value = '';
+    input.focus();
+  }
+  document.getElementById('addTaskHomeBtn').addEventListener('click', addHomeTask);
+  document.getElementById('newTaskHome').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') addHomeTask();
+  });
+
+  // ---- tasks page: add task with priority ----
+  function priorityColor(p){
+    if(p >= 85) return {text:'var(--danger)', barA:'var(--danger-dim)', barB:'var(--danger)'};
+    if(p >= 65) return {text:'var(--amber)', barA:'var(--amber-dim)', barB:'var(--amber)'};
+    return {text:'var(--screen)', barA:'var(--screen-dim)', barB:'var(--screen)'};
+  }
+  function addTaskRow(){
+    const nameInput = document.getElementById('newTaskName');
+    const priInput = document.getElementById('newTaskPriority');
+    const name = nameInput.value.trim();
+    let priority = parseInt(priInput.value, 10);
+    if(!name) return;
+    if(isNaN(priority)) priority = 50;
+    priority = Math.max(0, Math.min(100, priority));
+    const c = priorityColor(priority);
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + name.replace(/</g,'&lt;') + '</td>' +
+      '<td style="font-family:var(--font-mono); color:' + c.text + ';">' + priority + '</td>' +
+      '<td style="width:40%;"><div class="bar-track"><div class="bar-fill" style="width:' + priority + '%; background:linear-gradient(90deg,' + c.barA + ',' + c.barB + ');"></div></div></td>';
+    document.getElementById('taskTableBody').appendChild(tr);
+    nameInput.value = '';
+    priInput.value = '';
+    nameInput.focus();
+  }
+  document.getElementById('addTaskBtn').addEventListener('click', addTaskRow);
+  [document.getElementById('newTaskName'), document.getElementById('newTaskPriority')].forEach(el => {
+    el.addEventListener('keydown', (e) => { if(e.key === 'Enter') addTaskRow(); });
   });
 
   // ---- calendar simulate ----
@@ -991,9 +1061,33 @@
     this.textContent = 'Regenerate';
   });
 
-  // ---- assign homework ----
-  document.getElementById('assignBtn').addEventListener('click', function(){
-    document.getElementById('assignConfirm').style.display = 'block';
+  // ---- assign homework (teacher) ----
+  function assignHomework(){
+    const nameInput = document.getElementById('newAssignName');
+    const dueInput = document.getElementById('newAssignDue');
+    const name = nameInput.value.trim();
+    const due = dueInput.value.trim() || 'this week';
+    if(!name) return;
+    const item = document.createElement('div');
+    item.className = 'task-row';
+    item.innerHTML = '<div class="checkbox done">✓</div><span class="task-name">' +
+      name.replace(/</g,'&lt;') + '</span><span class="pill amber" style="margin-left:auto;">Due ' +
+      due.replace(/</g,'&lt;') + '</span>';
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    document.getElementById('assignedList').prepend(item);
+
+    const confirm = document.getElementById('assignConfirm');
+    confirm.textContent = '"' + name + '" assigned to all 28 students in AP Physics — Period 4.';
+    confirm.style.display = 'block';
+
+    nameInput.value = '';
+    dueInput.value = '';
+    nameInput.focus();
+  }
+  document.getElementById('assignBtn').addEventListener('click', assignHomework);
+  [document.getElementById('newAssignName'), document.getElementById('newAssignDue')].forEach(el => {
+    el.addEventListener('keydown', (e) => { if(e.key === 'Enter') assignHomework(); });
   });
 
   // ---- settings toggles ----
